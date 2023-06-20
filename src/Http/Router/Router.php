@@ -3,9 +3,18 @@ namespace SLiMS\Http\Router;
 
 use SLiMS\Http\Request;
 use SLiMS\Http\Response;
-use Symfony\Component\HttpKernel;
-use Symfony\Component\Routing;
+use SLiMS\Http\ResponseEvent;
+use Symfony\Component\HttpKernel\Controller\ControllerResolver;
+use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
 use Symfony\Component\Routing\RouteCollection;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface;
+use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
+use Symfony\Component\Routing\RequestContext;
+use Symfony\Component\Routing\Matcher\UrlMatcher;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
+
 
 class Router
 {
@@ -13,11 +22,13 @@ class Router
     private $request;
     private $routes;
     private $matcher;
+    private $dispatcher;
 
     public function __construct(Request $request)
     {
        $this->request = $request;
-       $this->context = new Routing\RequestContext;
+       $this->context = new RequestContext;
+       $this->dispatcher = new EventDispatcher;
        $this->context->fromRequest($this->request);
     }
 
@@ -35,10 +46,23 @@ class Router
 
     public function handle()
     {
-        $this->matcher = new Routing\Matcher\UrlMatcher($this->routes, $this->context);
-        $controllerResolver = new HttpKernel\Controller\ControllerResolver();
-        $argumentResolver = new HttpKernel\Controller\ArgumentResolver();
+        $this->matcher = new UrlMatcher($this->routes, $this->context);
+        $controllerResolver = new ControllerResolver();
+        $argumentResolver = new ArgumentResolver();
 
+
+        $this->dispatcher->addListener('response', function (ResponseEvent $event) {
+            $response = $event->getResponse();
+            $request = $event->getRequest();
+        
+            if ($request->query('my_name'))
+            {
+                $response->json('Failed')->send();
+                exit;
+            }
+        
+            $response->setContent($response->getContent().'GA CODE');
+        });
 
         try {
             $this->request->attributes->add($this->matcher->match($this->request->getPathInfo()));
@@ -47,12 +71,16 @@ class Router
             $arguments = $argumentResolver->getArguments($this->request, $controller);
 
             $response = call_user_func_array($controller, $arguments);
-        } catch (Routing\Exception\ResourceNotFoundException $exception) {
+        } catch (ResourceNotFoundException $exception) {
             $response = new Response('Not Found', 404);
-        } catch (Exception $exception) {
+        } catch (\Exception $exception) {
             $response = new Response('An error occurred', 500);
         }
         
-        $response->send();
+        // dispatch a response event
+        $this->dispatcher->dispatch(new ResponseEvent($response, $this->request), 'response');
+
+
+        return $response;
     }
 }

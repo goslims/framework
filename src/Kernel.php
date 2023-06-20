@@ -65,7 +65,7 @@ class Kernel
             
         } else {
             $router = new Router($request);
-            $router->getRoutes()->handle();
+            return $router->getRoutes()->handle();
         }
     }
 
