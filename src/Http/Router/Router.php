@@ -69,10 +69,11 @@ class Router
         
             $controller = $controllerResolver->getController($this->request);
             $arguments = $argumentResolver->getArguments($this->request, $controller);
-
             $response = call_user_func_array($controller, $arguments);
         } catch (ResourceNotFoundException $exception) {
             $response = new Response('Not Found', 404);
+        } catch (\SLiMS\Http\Exception\ErrorPage $e) {
+            $response = new Response($e->getMessage(), 500);
         } catch (\Exception $exception) {
             $response = new Response('An error occurred', 500);
         }

@@ -56,7 +56,7 @@ class Kernel
 
     private function setIgnition()
     {
-        \SLiMS\Ignition::init()->register();
+        \SLiMS\Ignition::init()->inDevlopment()->register();
     }
 
     public function handle(Request $request)

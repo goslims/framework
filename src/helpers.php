@@ -1,5 +1,5 @@
 <?php
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use SLiMS\Http\Exception;
 
 if (!function_exists('config')) {
     /**
@@ -50,6 +50,6 @@ if (!function_exists('abort'))
 {
     function abort(string $message, int $code)
     {
-        throw new Symfony\Component\Routing\Exception\ResourceNotFoundException($message, $code);
+        throw new \SLiMS\Http\Exception\ErrorPage($message, $code);
     }
 }

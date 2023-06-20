@@ -23,18 +23,14 @@ class Ignition extends SpatieIgnition
 
     public function SlimsHandleException(Throwable $throwable): Report
     {
-        $this->setUpFlare();
-
         $report = $this->createReport($throwable);
         $request = Request::capture();
 
         if ($this->shouldDisplayException && $this->inProductionEnvironment !== true) {
             if ($request->headers('Content-Type') === 'application/json') $this->renderExceptionAsJson($report);
             else $this->renderException($throwable, $report);
-        }
-
-        if ($this->flare->apiTokenSet() && $this->inProductionEnvironment !== false) {
-            $this->flare->report($throwable, report: $report);
+        } else {
+            $this->renderErrorPage($report);
         }
 
         return $report;
@@ -48,6 +44,18 @@ class Ignition extends SpatieIgnition
             'exception' => $report->getExceptionClass(),
             'stacktrace' => $report->toArray()['stacktrace']??[]
         ])->send();
+    }
+
+    public function renderErrorPage(Report $report)
+    {
+        response()->html('Error', 500)->send();
+        exit;
+    }
+
+    public function inDevlopment()
+    {
+        $this->shouldDisplayException = env('APP_ENV', 'development') === 'development';
+        return $this;
     }
 
     public function register(): self

@@ -1,7 +1,9 @@
 <?php
-namespace SLiMS\Http\Router;
+namespace SLiMS\Http\Exception;
 
-class BadMethodCallException extends \Exception
+use Exception;
+
+class ShowError extends Exception
 {
     public function __construct($message, $code = 0, \Throwable $previous = null) {
         // some code
